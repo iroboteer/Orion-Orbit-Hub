@@ -1,0 +1,43 @@
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .ant-layout-sider {
+    position: fixed !important;
+    z-index: 200 !important;
+  }
+  .ant-layout-content {
+    margin: 8px !important;
+  }
+  .ant-card {
+    margin-bottom: 8px !important;
+  }
+  .ant-table {
+    font-size: 12px !important;
+  }
+  .ant-table-cell {
+    padding: 8px 4px !important;
+  }
+  .ant-descriptions-item-label {
+    width: auto !important;
+  }
+  .ant-statistic-title {
+    font-size: 12px !important;
+  }
+  .ant-statistic-content-value {
+    font-size: 20px !important;
+  }
+  .ant-col-6 {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .ant-col-6 {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+  .ant-table-thead > tr > th:nth-child(n+4),
+  .ant-table-tbody > tr > td:nth-child(n+4) {
+    display: none;
+  }
+}

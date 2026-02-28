@@ -1,0 +1,5 @@
+{
+  "name": "openclaw-control-ui",
+  "private": true,
+  "workspaces": ["frontend", "bff"]
+}
