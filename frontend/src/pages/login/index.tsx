@@ -85,7 +85,7 @@ export default function LoginPage() {
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 24, boxShadow: "0 4px 20px rgba(102,126,234,0.4)",
               }}>⬡</div>
-              <Text style={{ color: "#ffffff90", fontSize: 18, fontWeight: 500, letterSpacing: 2 }}>NEXUSCORE</Text>
+              <Text style={{ color: "#ffffff90", fontSize: 18, fontWeight: 500, letterSpacing: 2 }}>ORION ORBIT</Text>
             </div>
             <Title level={1} style={{ color: "#fff", margin: 0, fontSize: 42, fontWeight: 700, lineHeight: 1.2 }}>
               {t.headline}

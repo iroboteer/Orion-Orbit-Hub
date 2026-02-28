@@ -1,5 +1,5 @@
 {
-  "name": "openclaw-control-ui",
+  "name": "orion-orbit-hub",
   "private": true,
   "workspaces": ["frontend", "bff"]
 }

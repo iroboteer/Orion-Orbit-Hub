@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: control
       POSTGRES_PASSWORD: control
     volumes:
-      - control-db-data:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
     healthcheck:
@@ -23,7 +23,7 @@ services:
     environment:
       PORT: "4100"
       DATABASE_URL: "postgres://control:control@127.0.0.1:5433/control_ui"
-      COOKIE_SECRET: "9989cfaaf6b35590c110fc8a14a7ccc7fb704dd34f4c77c4988d2e106e055d3a"
+      COOKIE_SECRET: "$(openssl rand -hex 32)"
       OPENCLAW_GATEWAY_URL: "http://127.0.0.1:18789"
       NODE_ENV: production
       HOME: "/home/ec2-user"
@@ -37,10 +37,10 @@ services:
     build: ./frontend
     ports:
       - "3100:80"
-    volumes:
-      - /home/ec2-user/.openclaw/openclaw.json:/home/ec2-user/.openclaw/openclaw.json:ro
     depends_on:
       - bff
 
 volumes:
-  control-db-data:
+  db-data:
+    name: openclaw-control-ui_control-db-data
+    external: true

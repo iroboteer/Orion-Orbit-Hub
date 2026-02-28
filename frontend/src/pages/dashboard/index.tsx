@@ -28,7 +28,7 @@ export default function DashboardPage() {
         <Title level={4} style={{ margin: 0 }}>
           👋 欢迎回来，{user?.displayName || user?.email}
         </Title>
-        <Text type="secondary">NexusCore · AI 管控中枢</Text>
+        <Text type="secondary">Orion Orbit Hub</Text>
       </div>
 
       <Row gutter={[16, 16]}>

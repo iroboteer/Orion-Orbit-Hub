@@ -87,9 +87,9 @@ export default function AdminLayout() {
       >
         <div style={{ padding: "20px 16px 12px", textAlign: "center" }}>
           <div style={{ fontSize: collapsed ? 20 : 24, fontWeight: 700, color: "#fff", lineHeight: 1 }}>
-            {collapsed ? "⬡" : "⬡ NexusCore"}
+            {collapsed ? "🪐" : "🪐 Orion Orbit"}
           </div>
-          {!collapsed && <Text style={{ color: "#ffffff60", fontSize: 12 }}>AI Control Hub</Text>}
+          {!collapsed && <Text style={{ color: "#ffffff60", fontSize: 12 }}>Orbit Hub</Text>}
         </div>
         <Menu
           theme="dark" mode="inline"
