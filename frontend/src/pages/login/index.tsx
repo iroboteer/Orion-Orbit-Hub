@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Input, Button, Card, Typography, message, Space, Select, Divider } from "antd";
-import { UserOutlined, LockOutlined, GlobalOutlined } from "@ant-design/icons";
+import { UserOutlined, LockOutlined, GlobalOutlined, EyeTwoTone, EyeInvisibleOutlined } from "@ant-design/icons";
 import { useAuth } from "@/stores/auth";
 import { useI18n } from "@/i18n";
 
@@ -131,7 +131,7 @@ export default function LoginPage() {
                 <Input prefix={<UserOutlined />} placeholder={t.email} style={{ borderRadius: 10, height: 46 }} />
               </Form.Item>
               <Form.Item name="password" rules={[{ required: true, message: t.password }]}>
-                <Input.Password prefix={<LockOutlined />} placeholder={t.password} style={{ borderRadius: 10, height: 46 }} />
+                <Input.Password prefix={<LockOutlined />} placeholder={t.password} style={{ borderRadius: 10, height: 46 }} iconRender={(visible) => visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />} />
               </Form.Item>
               <Form.Item style={{ marginBottom: 8 }}>
                 <Button type="primary" htmlType="submit" block loading={loading}

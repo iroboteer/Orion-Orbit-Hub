@@ -1,139 +1,173 @@
-import React, { useState } from "react";
-import { Card, Table, Tag, Button, Space, Typography, Modal, Form, Input, Select, Switch,
-  Descriptions, Drawer, Tabs, Badge, Popconfirm, message, Tooltip, Row, Col, Statistic, Empty, List, Alert } from "antd";
+import React, { useState, useMemo } from "react";
+import { Card, Table, Tag, Button, Space, Typography, Modal, Input, Select, Switch,
+  Descriptions, Drawer, Tabs, Badge, Popconfirm, message, Tooltip, Row, Col, Statistic, Empty, List, Alert, Segmented } from "antd";
 import { PlusOutlined, AppstoreOutlined, CloudDownloadOutlined, DeleteOutlined,
   EyeOutlined, CheckCircleOutlined, StopOutlined, InfoCircleOutlined,
-  CodeOutlined, BookOutlined, ToolOutlined, GlobalOutlined } from "@ant-design/icons";
+  CodeOutlined, BookOutlined, ToolOutlined, GlobalOutlined, SearchOutlined,
+  FilterOutlined, ThunderboltOutlined, SafetyCertificateOutlined,
+  SoundOutlined, CameraOutlined, MessageOutlined, ApiOutlined,
+  FileTextOutlined, DatabaseOutlined, GithubOutlined, MailOutlined,
+  CloudOutlined, RobotOutlined, SettingOutlined } from "@ant-design/icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 const { Title, Text, Paragraph } = Typography;
 
-const DEMO_SKILLS = [
-  {
-    id: "weather", name: "weather", version: "1.0.0", source: "builtin", enabled: true,
-    risk: "low", description: "通过 wttr.in 或 Open-Meteo 获取天气信息和预报",
-    author: "OpenClaw", license: "MIT", tools: ["web_fetch"],
-    agents: ["agent-main", "agent-ops"], installDate: "2026-02-15T10:00:00Z",
-    usageCount: 234, lastUsed: new Date(Date.now() - 3600000).toISOString(),
-    readme: "# Weather Skill\n\n获取当前天气和预报。支持全球任意城市。\n\n## 使用方式\n用户问天气时自动触发。\n\n## 支持功能\n- 当前天气\n- 7天预报\n- 多城市比较",
-  },
-  {
-    id: "web-search", name: "web-search", version: "1.2.0", source: "builtin", enabled: true,
-    risk: "medium", description: "通过 Brave Search API 搜索网页内容",
-    author: "OpenClaw", license: "MIT", tools: ["web_search", "web_fetch"],
-    agents: ["agent-main", "agent-ops", "agent-data"], installDate: "2026-02-15T10:00:00Z",
-    usageCount: 892, lastUsed: new Date(Date.now() - 600000).toISOString(),
-    readme: "# Web Search Skill\n\n搜索引擎集成。使用 Brave Search API。\n\n## 功能\n- 网页搜索\n- 新闻搜索\n- 内容摘取",
-  },
-  {
-    id: "healthcheck", name: "healthcheck", version: "1.1.0", source: "builtin", enabled: true,
-    risk: "low", description: "主机安全检查和系统健康状态监控",
-    author: "OpenClaw", license: "MIT", tools: ["exec"],
-    agents: ["agent-ops"], installDate: "2026-02-16T08:00:00Z",
-    usageCount: 156, lastUsed: new Date(Date.now() - 7200000).toISOString(),
-    readme: "# Healthcheck Skill\n\n系统健康检查。包括：\n- SSH 安全\n- 防火墙状态\n- 系统更新\n- 磁盘空间\n- 服务状态",
-  },
-  {
-    id: "openai-image-gen", name: "openai-image-gen", version: "1.0.0", source: "builtin", enabled: false,
-    risk: "medium", description: "通过 OpenAI Images API 生成图片",
-    author: "OpenClaw", license: "MIT", tools: ["exec", "web_fetch"],
-    agents: ["agent-data"], installDate: "2026-02-20T14:00:00Z",
-    usageCount: 45, lastUsed: new Date(Date.now() - 86400000).toISOString(),
-    readme: "# OpenAI Image Gen\n\n批量生成图片并创建画廊页面。",
-  },
-  {
-    id: "openai-whisper-api", name: "openai-whisper-api", version: "1.0.0", source: "builtin", enabled: false,
-    risk: "low", description: "通过 OpenAI Whisper API 转录音频",
-    author: "OpenClaw", license: "MIT", tools: ["exec"],
-    agents: [], installDate: "2026-02-20T14:00:00Z",
-    usageCount: 12, lastUsed: new Date(Date.now() - 172800000).toISOString(),
-    readme: "# Whisper Transcription\n\n语音转文字。支持多种语言。",
-  },
-  {
-    id: "skill-creator", name: "skill-creator", version: "1.0.0", source: "builtin", enabled: true,
-    risk: "high", description: "创建和管理 Agent 技能模板",
-    author: "OpenClaw", license: "MIT", tools: ["read", "write", "exec"],
-    agents: ["agent-main"], installDate: "2026-02-15T10:00:00Z",
-    usageCount: 28, lastUsed: new Date(Date.now() - 43200000).toISOString(),
-    readme: "# Skill Creator\n\n用于创建新的 Agent 技能。\n\n⚠️ 高风险：可以读写文件和执行命令。",
-  },
-  {
-    id: "db-query", name: "db-query", version: "0.9.0", source: "clawhub", enabled: false,
-    risk: "high", description: "数据库查询工具（PostgreSQL/MySQL）",
-    author: "Community", license: "Apache-2.0", tools: ["exec"],
-    agents: [], installDate: "2026-02-25T16:00:00Z",
-    usageCount: 0, lastUsed: null,
-    readme: "# Database Query\n\n安全的数据库查询工具。支持只读模式。\n\n⚠️ 需要谨慎配置权限。",
-  },
-  {
-    id: "github-integration", name: "github-integration", version: "1.3.0", source: "clawhub", enabled: true,
-    risk: "medium", description: "GitHub 仓库管理、PR 审查、Issue 管理",
-    author: "Community", license: "MIT", tools: ["web_fetch", "exec"],
-    agents: ["agent-main", "agent-ops"], installDate: "2026-02-22T09:00:00Z",
-    usageCount: 167, lastUsed: new Date(Date.now() - 1800000).toISOString(),
-    readme: "# GitHub Integration\n\n完整的 GitHub 集成。\n\n## 功能\n- 仓库浏览\n- PR 创建和审查\n- Issue 管理\n- Actions 监控",
-  },
+// ─── Real Built-in Skills from OpenClaw ───
+const BUILTIN_SKILLS: any[] = [
+  { id: "weather", name: "weather", version: "1.0.0", source: "builtin", enabled: true, risk: "low", category: "utility",
+    description: "Get weather and forecasts via wttr.in / Open-Meteo", author: "OpenClaw", license: "MIT",
+    tools: ["web_fetch"], agents: ["main"], usageCount: 234, icon: "🌤️" },
+  { id: "healthcheck", name: "healthcheck", version: "1.0.0", source: "builtin", enabled: true, risk: "low", category: "devops",
+    description: "Host security hardening and system health checks", author: "OpenClaw", license: "MIT",
+    tools: ["exec"], agents: ["main", "ops"], usageCount: 156, icon: "🛡️" },
+  { id: "openai-image-gen", name: "openai-image-gen", version: "1.0.0", source: "builtin", enabled: false, risk: "medium", category: "ai",
+    description: "Batch-generate images via OpenAI Images API with gallery", author: "OpenClaw", license: "MIT",
+    tools: ["exec", "web_fetch"], agents: [], usageCount: 45, icon: "🎨" },
+  { id: "openai-whisper-api", name: "openai-whisper-api", version: "1.0.0", source: "builtin", enabled: false, risk: "low", category: "ai",
+    description: "Transcribe audio via OpenAI Whisper API", author: "OpenClaw", license: "MIT",
+    tools: ["exec"], agents: [], usageCount: 12, icon: "🎙️" },
+  { id: "skill-creator", name: "skill-creator", version: "1.0.0", source: "builtin", enabled: true, risk: "high", category: "devops",
+    description: "Create and manage Agent skill templates", author: "OpenClaw", license: "MIT",
+    tools: ["read", "write", "exec"], agents: ["main"], usageCount: 28, icon: "🛠️" },
+  { id: "coding-agent", name: "coding-agent", version: "1.0.0", source: "builtin", enabled: true, risk: "high", category: "devops",
+    description: "Spawn coding sub-agents for complex tasks", author: "OpenClaw", license: "MIT",
+    tools: ["exec", "read", "write"], agents: ["main"], usageCount: 89, icon: "💻" },
+  { id: "github", name: "github", version: "1.0.0", source: "builtin", enabled: true, risk: "medium", category: "devops",
+    description: "GitHub repository management, PRs, issues", author: "OpenClaw", license: "MIT",
+    tools: ["exec", "web_fetch"], agents: ["main", "ops"], usageCount: 167, icon: "🐙" },
+  { id: "discord", name: "discord", version: "1.0.0", source: "builtin", enabled: true, risk: "low", category: "messaging",
+    description: "Discord bot integration and message management", author: "OpenClaw", license: "MIT",
+    tools: ["message"], agents: ["main"], usageCount: 320, icon: "💬" },
+  { id: "slack", name: "slack", version: "1.0.0", source: "builtin", enabled: false, risk: "low", category: "messaging",
+    description: "Slack workspace integration", author: "OpenClaw", license: "MIT",
+    tools: ["message"], agents: [], usageCount: 0, icon: "📢" },
+  { id: "notion", name: "notion", version: "1.0.0", source: "builtin", enabled: false, risk: "medium", category: "productivity",
+    description: "Notion database and page sync", author: "OpenClaw", license: "MIT",
+    tools: ["web_fetch"], agents: [], usageCount: 0, icon: "📝" },
+  { id: "trello", name: "trello", version: "1.0.0", source: "builtin", enabled: false, risk: "low", category: "productivity",
+    description: "Trello board and card management", author: "OpenClaw", license: "MIT",
+    tools: ["web_fetch"], agents: [], usageCount: 0, icon: "📋" },
+  { id: "camsnap", name: "camsnap", version: "1.0.0", source: "builtin", enabled: true, risk: "medium", category: "iot",
+    description: "Camera snapshot capture from paired devices", author: "OpenClaw", license: "MIT",
+    tools: ["nodes"], agents: ["main"], usageCount: 56, icon: "📷" },
+  { id: "sag", name: "sag", version: "1.0.0", source: "builtin", enabled: false, risk: "low", category: "ai",
+    description: "ElevenLabs TTS — text-to-speech with custom voices", author: "OpenClaw", license: "MIT",
+    tools: ["tts"], agents: [], usageCount: 33, icon: "🔊" },
+  { id: "gemini", name: "gemini", version: "1.0.0", source: "builtin", enabled: false, risk: "medium", category: "ai",
+    description: "Google Gemini model integration", author: "OpenClaw", license: "MIT",
+    tools: ["web_fetch"], agents: [], usageCount: 0, icon: "♊" },
+  { id: "himalaya", name: "himalaya", version: "1.0.0", source: "builtin", enabled: false, risk: "medium", category: "messaging",
+    description: "Email client — read, send, manage via CLI", author: "OpenClaw", license: "MIT",
+    tools: ["exec"], agents: [], usageCount: 0, icon: "📧" },
+  { id: "obsidian", name: "obsidian", version: "1.0.0", source: "builtin", enabled: false, risk: "low", category: "productivity",
+    description: "Obsidian vault note management", author: "OpenClaw", license: "MIT",
+    tools: ["read", "write"], agents: [], usageCount: 0, icon: "💎" },
+  { id: "spotify-player", name: "spotify-player", version: "1.0.0", source: "builtin", enabled: false, risk: "low", category: "media",
+    description: "Spotify playback control", author: "OpenClaw", license: "MIT",
+    tools: ["exec"], agents: [], usageCount: 0, icon: "🎵" },
+  { id: "summarize", name: "summarize", version: "1.0.0", source: "builtin", enabled: true, risk: "low", category: "ai",
+    description: "Summarize web pages, PDFs, and documents", author: "OpenClaw", license: "MIT",
+    tools: ["web_fetch", "read"], agents: ["main", "data"], usageCount: 210, icon: "📄" },
+  { id: "canvas", name: "canvas", version: "1.0.0", source: "builtin", enabled: true, risk: "medium", category: "utility",
+    description: "Present interactive HTML canvases to users", author: "OpenClaw", license: "MIT",
+    tools: ["canvas"], agents: ["main"], usageCount: 78, icon: "🖼️" },
+  { id: "voice-call", name: "voice-call", version: "1.0.0", source: "builtin", enabled: false, risk: "medium", category: "messaging",
+    description: "Voice call handling with speech recognition", author: "OpenClaw", license: "MIT",
+    tools: ["tts", "exec"], agents: [], usageCount: 0, icon: "📞" },
+  { id: "clawhub", name: "clawhub", version: "1.0.0", source: "builtin", enabled: true, risk: "low", category: "utility",
+    description: "Browse and install skills from ClawHub marketplace", author: "OpenClaw", license: "MIT",
+    tools: ["web_fetch"], agents: ["main"], usageCount: 15, icon: "🏪" },
+  { id: "model-usage", name: "model-usage", version: "1.0.0", source: "builtin", enabled: true, risk: "low", category: "utility",
+    description: "Track and report AI model usage and costs", author: "OpenClaw", license: "MIT",
+    tools: ["read"], agents: ["main"], usageCount: 44, icon: "📊" },
+  { id: "session-logs", name: "session-logs", version: "1.0.0", source: "builtin", enabled: true, risk: "low", category: "devops",
+    description: "Session log viewing and analysis", author: "OpenClaw", license: "MIT",
+    tools: ["read"], agents: ["main", "ops"], usageCount: 130, icon: "📜" },
+  { id: "imsg", name: "imsg", version: "1.0.0", source: "builtin", enabled: false, risk: "medium", category: "messaging",
+    description: "iMessage integration (macOS)", author: "OpenClaw", license: "MIT",
+    tools: ["exec"], agents: [], usageCount: 0, icon: "💬" },
 ];
 
-const RISK_MAP: Record<string, { color: string; text: string }> = {
-  low: { color: "green", text: "低风险" },
-  medium: { color: "orange", text: "中风险" },
-  high: { color: "red", text: "高风险" },
+const CATEGORIES: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  all:          { label: "All",          color: "default",  icon: <AppstoreOutlined /> },
+  ai:           { label: "AI / ML",      color: "purple",   icon: <RobotOutlined /> },
+  devops:       { label: "DevOps",       color: "volcano",  icon: <CodeOutlined /> },
+  messaging:    { label: "Messaging",    color: "blue",     icon: <MessageOutlined /> },
+  productivity: { label: "Productivity", color: "cyan",     icon: <FileTextOutlined /> },
+  iot:          { label: "IoT",          color: "green",    icon: <CameraOutlined /> },
+  media:        { label: "Media",        color: "magenta",  icon: <SoundOutlined /> },
+  utility:      { label: "Utility",      color: "gold",     icon: <SettingOutlined /> },
 };
 
-const SOURCE_MAP: Record<string, { color: string; icon: React.ReactNode }> = {
-  builtin: { color: "green", icon: <CheckCircleOutlined /> },
-  clawhub: { color: "blue", icon: <GlobalOutlined /> },
-  custom: { color: "purple", icon: <CodeOutlined /> },
+const RISK_MAP: Record<string, { color: string; text: string }> = {
+  low: { color: "green", text: "Low" }, medium: { color: "orange", text: "Medium" }, high: { color: "red", text: "High" },
 };
 
 const CLAWHUB_SKILLS = [
-  { id: "email-sender", name: "email-sender", version: "1.0.0", description: "邮件发送和管理", risk: "medium", author: "Community", downloads: 1240 },
-  { id: "calendar-sync", name: "calendar-sync", version: "0.8.0", description: "Google/Outlook 日历同步", risk: "low", author: "Community", downloads: 890 },
-  { id: "pdf-reader", name: "pdf-reader", version: "1.1.0", description: "PDF 文件解析与摘要", risk: "low", author: "Community", downloads: 2100 },
-  { id: "slack-bot", name: "slack-bot", version: "2.0.0", description: "Slack 消息和工作流", risk: "medium", author: "Community", downloads: 3400 },
-  { id: "notion-sync", name: "notion-sync", version: "1.0.0", description: "Notion 数据库和页面同步", risk: "medium", author: "Community", downloads: 1670 },
+  { id: "email-sender", name: "email-sender", version: "1.0.0", description: "Send and manage emails", risk: "medium", author: "Community", downloads: 1240 },
+  { id: "calendar-sync", name: "calendar-sync", version: "0.8.0", description: "Google/Outlook calendar sync", risk: "low", author: "Community", downloads: 890 },
+  { id: "pdf-reader", name: "pdf-reader", version: "1.1.0", description: "PDF parsing and summarization", risk: "low", author: "Community", downloads: 2100 },
+  { id: "db-query", name: "db-query", version: "0.9.0", description: "Database query tool (PostgreSQL/MySQL)", risk: "high", author: "Community", downloads: 560 },
+  { id: "jira-sync", name: "jira-sync", version: "1.2.0", description: "Jira issue tracking integration", risk: "medium", author: "Community", downloads: 1890 },
 ];
 
 export default function SkillsPage() {
   const qc = useQueryClient();
   const [detailSkill, setDetailSkill] = useState<any>(null);
   const [installOpen, setInstallOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("all");
+  const [riskFilter, setRiskFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["skills"],
     queryFn: () => api.get("/skills").then(r => r.data).catch(() => ({ skills: [] })),
   });
 
-  const skills = data?.skills?.length > 0 ? data.skills : DEMO_SKILLS;
+  const skills = data?.skills?.length > 0 ? data.skills : BUILTIN_SKILLS;
+
+  const filtered = useMemo(() => {
+    return skills.filter((s: any) => {
+      if (search && !s.name.toLowerCase().includes(search.toLowerCase()) && !s.description.toLowerCase().includes(search.toLowerCase())) return false;
+      if (category !== "all" && s.category !== category) return false;
+      if (riskFilter && s.risk !== riskFilter) return false;
+      if (statusFilter === "enabled" && !s.enabled) return false;
+      if (statusFilter === "disabled" && s.enabled) return false;
+      return true;
+    });
+  }, [skills, search, category, riskFilter, statusFilter]);
 
   const toggleMut = useMutation({
-    mutationFn: ({ id, enable }: { id: string; enable: boolean }) =>
-      api.post("/skills/" + id + "/" + (enable ? "enable" : "disable")),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["skills"] }); message.success("状态已更新"); },
+    mutationFn: ({ id, enable }: { id: string; enable: boolean }) => api.post("/skills/" + id + "/" + (enable ? "enable" : "disable")),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["skills"] }); message.success("Updated"); },
   });
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => api.delete("/skills/" + id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["skills"] }); message.success("已卸载"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["skills"] }); message.success("Uninstalled"); },
   });
 
   const installMut = useMutation({
     mutationFn: (skill: any) => api.post("/skills/install", skill),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["skills"] }); message.success("安装成功"); setInstallOpen(false); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["skills"] }); message.success("Installed"); setInstallOpen(false); },
   });
 
   const columns = [
     {
-      title: "技能", key: "name", width: 280,
+      title: "Skill", key: "name", width: 320,
       render: (_: any, r: any) => (
         <Space>
-          <div style={{ width: 40, height: 40, borderRadius: 8, background: r.enabled ? "#f0f5ff" : "#f5f5f5",
-            display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <AppstoreOutlined style={{ fontSize: 20, color: r.enabled ? "#4945ff" : "#999" }} />
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: r.enabled ? "#f0f5ff" : "#f5f5f5",
+            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
+            {r.icon || "🧩"}
           </div>
           <div>
-            <Text strong>{r.name}</Text> <Tag color="default" style={{ fontSize: 10 }}>v{r.version}</Tag>
+            <Space size={4}>
+              <Text strong>{r.name}</Text>
+              <Tag style={{ fontSize: 10 }}>v{r.version}</Tag>
+              <Tag color={CATEGORIES[r.category]?.color || "default"} style={{ fontSize: 10 }}>{CATEGORIES[r.category]?.label || r.category}</Tag>
+            </Space>
             <br />
             <Text type="secondary" style={{ fontSize: 12 }}>{r.description}</Text>
           </div>
@@ -141,40 +175,39 @@ export default function SkillsPage() {
       ),
     },
     {
-      title: "来源", dataIndex: "source", key: "source", width: 100,
-      render: (v: string) => { const s = SOURCE_MAP[v]; return <Tag color={s?.color} icon={s?.icon}>{v}</Tag>; },
+      title: "Risk", dataIndex: "risk", key: "risk", width: 90,
+      render: (v: string) => <Tag color={RISK_MAP[v]?.color}>{RISK_MAP[v]?.text}</Tag>,
     },
     {
-      title: "风险", dataIndex: "risk", key: "risk", width: 90,
-      render: (v: string) => { const r = RISK_MAP[v]; return <Tag color={r?.color}>{r?.text}</Tag>; },
+      title: "Tools", dataIndex: "tools", key: "tools", width: 180,
+      render: (tools: string[]) => <Space wrap size={[4, 4]}>{tools?.map(t => <Tag key={t} color="volcano" style={{ fontSize: 10 }}>{t}</Tag>)}</Space>,
     },
     {
-      title: "使用次数", dataIndex: "usageCount", key: "usage", width: 90, align: "center" as const,
+      title: "Usage", dataIndex: "usageCount", key: "usage", width: 80, align: "center" as const,
+      sorter: (a: any, b: any) => (a.usageCount || 0) - (b.usageCount || 0),
       render: (v: number) => <Text>{v?.toLocaleString()}</Text>,
     },
     {
-      title: "关联 Agent", dataIndex: "agents", key: "agents", width: 200,
+      title: "Agents", dataIndex: "agents", key: "agents", width: 160,
       render: (agents: string[]) => (
         <Space wrap size={[4, 4]}>
-          {agents?.map(a => <Tag key={a} color="geekblue">{a}</Tag>)}
-          {(!agents || agents.length === 0) && <Text type="secondary">未关联</Text>}
+          {agents?.map(a => <Tag key={a} color="geekblue" style={{ fontSize: 10 }}>{a}</Tag>)}
+          {(!agents || agents.length === 0) && <Text type="secondary" style={{ fontSize: 11 }}>—</Text>}
         </Space>
       ),
     },
     {
-      title: "状态", dataIndex: "enabled", key: "enabled", width: 80,
-      render: (v: boolean, r: any) => (
-        <Switch checked={v} size="small" onChange={checked => toggleMut.mutate({ id: r.id, enable: checked })} />
-      ),
+      title: "Status", dataIndex: "enabled", key: "enabled", width: 80,
+      render: (v: boolean, r: any) => <Switch checked={v} size="small" onChange={c => toggleMut.mutate({ id: r.id, enable: c })} />,
     },
     {
-      title: "操作", key: "actions", width: 120,
+      title: "Actions", key: "actions", width: 100,
       render: (_: any, r: any) => (
         <Space>
-          <Tooltip title="详情"><Button size="small" icon={<EyeOutlined />} onClick={() => setDetailSkill(r)} /></Tooltip>
+          <Tooltip title="Details"><Button size="small" icon={<EyeOutlined />} onClick={() => setDetailSkill(r)} /></Tooltip>
           {r.source !== "builtin" && (
-            <Popconfirm title="确认卸载此技能？" onConfirm={() => deleteMut.mutate(r.id)}>
-              <Tooltip title="卸载"><Button size="small" danger icon={<DeleteOutlined />} /></Tooltip>
+            <Popconfirm title="Uninstall?" onConfirm={() => deleteMut.mutate(r.id)}>
+              <Tooltip title="Uninstall"><Button size="small" danger icon={<DeleteOutlined />} /></Tooltip>
             </Popconfirm>
           )}
         </Space>
@@ -188,67 +221,91 @@ export default function SkillsPage() {
   return (
     <div>
       <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={6}><Card size="small"><Statistic title="技能总数" value={skills.length} prefix={<AppstoreOutlined />} /></Card></Col>
-        <Col span={6}><Card size="small"><Statistic title="已启用" value={enabledCount} valueStyle={{ color: "#52c41a" }} prefix={<CheckCircleOutlined />} /></Card></Col>
-        <Col span={6}><Card size="small"><Statistic title="总调用次数" value={totalUsage} prefix={<ToolOutlined />} /></Card></Col>
-        <Col span={6}><Card size="small"><Statistic title="高风险技能" value={skills.filter((s: any) => s.risk === "high").length} valueStyle={{ color: "#ff4d4f" }} prefix={<InfoCircleOutlined />} /></Card></Col>
+        <Col span={6}><Card size="small"><Statistic title="Total Skills" value={skills.length} prefix={<AppstoreOutlined />} /></Card></Col>
+        <Col span={6}><Card size="small"><Statistic title="Enabled" value={enabledCount} valueStyle={{ color: "#52c41a" }} prefix={<CheckCircleOutlined />} /></Card></Col>
+        <Col span={6}><Card size="small"><Statistic title="Total Invocations" value={totalUsage} prefix={<ToolOutlined />} /></Card></Col>
+        <Col span={6}><Card size="small"><Statistic title="High Risk" value={skills.filter((s: any) => s.risk === "high").length} valueStyle={{ color: "#ff4d4f" }} prefix={<InfoCircleOutlined />} /></Card></Col>
       </Row>
 
-      <Card title={<Title level={4} style={{ margin: 0 }}>🧩 技能插件管理</Title>}
-        extra={<Button type="primary" icon={<CloudDownloadOutlined />} onClick={() => setInstallOpen(true)}>安装技能</Button>}>
-        <Table dataSource={skills} columns={columns} rowKey="id" loading={isLoading} pagination={false} scroll={{ x: 1000 }} />
+      {/* Category Tabs */}
+      <Card size="small" style={{ marginBottom: 16 }}>
+        <Space wrap size={[8, 8]}>
+          {Object.entries(CATEGORIES).map(([key, cat]) => (
+            <Tag key={key} color={category === key ? cat.color : "default"}
+              style={{ cursor: "pointer", padding: "4px 12px", fontSize: 13 }}
+              onClick={() => setCategory(key)}>
+              {cat.icon} {cat.label}
+              {key !== "all" && <Badge count={skills.filter((s: any) => s.category === key).length} size="small" style={{ marginLeft: 6 }} />}
+            </Tag>
+          ))}
+        </Space>
       </Card>
 
-      {/* Skill Detail Drawer */}
-      <Drawer title={detailSkill?.name} open={!!detailSkill} onClose={() => setDetailSkill(null)} width={640}>
+      <Card title={<Space><AppstoreOutlined /> <Title level={4} style={{ margin: 0 }}>Built-in Skills</Title>
+        <Tag color="blue">{filtered.length}</Tag></Space>}
+        extra={
+          <Space>
+            <Input placeholder="Search skills..." prefix={<SearchOutlined />} allowClear size="small" style={{ width: 200 }}
+              value={search} onChange={e => setSearch(e.target.value)} />
+            <Select placeholder="Risk" size="small" style={{ width: 100 }} allowClear value={riskFilter}
+              onChange={v => setRiskFilter(v)} options={[
+                { value: "low", label: "🟢 Low" }, { value: "medium", label: "🟡 Medium" }, { value: "high", label: "🔴 High" },
+              ]} />
+            <Select placeholder="Status" size="small" style={{ width: 110 }} allowClear value={statusFilter}
+              onChange={v => setStatusFilter(v)} options={[
+                { value: "enabled", label: "✅ Enabled" }, { value: "disabled", label: "⭕ Disabled" },
+              ]} />
+            <Button type="primary" icon={<CloudDownloadOutlined />} onClick={() => setInstallOpen(true)}>ClawHub</Button>
+          </Space>
+        }>
+        <Table dataSource={filtered} columns={columns} rowKey="id" loading={isLoading} pagination={false} scroll={{ x: 1000 }} size="middle" />
+      </Card>
+
+      {/* Detail Drawer */}
+      <Drawer title={<Space><span style={{ fontSize: 24 }}>{detailSkill?.icon}</span> {detailSkill?.name}</Space>}
+        open={!!detailSkill} onClose={() => setDetailSkill(null)} width={640}>
         {detailSkill && (
           <Tabs items={[
-            { key: "info", label: "基本信息", children: (
+            { key: "info", label: "Info", children: (
               <>
-                {detailSkill.risk === "high" && <Alert type="warning" message="⚠️ 高风险技能：此技能拥有文件读写或命令执行权限" style={{ marginBottom: 16 }} showIcon />}
+                {detailSkill.risk === "high" && <Alert type="warning" message="⚠️ High-risk skill: has file read/write or command execution permissions" style={{ marginBottom: 16 }} showIcon />}
                 <Descriptions bordered column={2} size="small">
-                  <Descriptions.Item label="名称">{detailSkill.name}</Descriptions.Item>
-                  <Descriptions.Item label="版本"><Tag>v{detailSkill.version}</Tag></Descriptions.Item>
-                  <Descriptions.Item label="来源"><Tag color={SOURCE_MAP[detailSkill.source]?.color}>{detailSkill.source}</Tag></Descriptions.Item>
-                  <Descriptions.Item label="风险"><Tag color={RISK_MAP[detailSkill.risk]?.color}>{RISK_MAP[detailSkill.risk]?.text}</Tag></Descriptions.Item>
-                  <Descriptions.Item label="作者">{detailSkill.author}</Descriptions.Item>
-                  <Descriptions.Item label="许可证">{detailSkill.license}</Descriptions.Item>
-                  <Descriptions.Item label="描述" span={2}>{detailSkill.description}</Descriptions.Item>
-                  <Descriptions.Item label="安装时间">{new Date(detailSkill.installDate).toLocaleString("zh-CN")}</Descriptions.Item>
-                  <Descriptions.Item label="使用次数">{detailSkill.usageCount?.toLocaleString()}</Descriptions.Item>
-                  <Descriptions.Item label="最后使用">{detailSkill.lastUsed ? new Date(detailSkill.lastUsed).toLocaleString("zh-CN") : "从未"}</Descriptions.Item>
-                  <Descriptions.Item label="状态">{detailSkill.enabled ? <Tag color="green">已启用</Tag> : <Tag>已禁用</Tag>}</Descriptions.Item>
+                  <Descriptions.Item label="Name">{detailSkill.name}</Descriptions.Item>
+                  <Descriptions.Item label="Version"><Tag>v{detailSkill.version}</Tag></Descriptions.Item>
+                  <Descriptions.Item label="Source"><Tag color="green">builtin</Tag></Descriptions.Item>
+                  <Descriptions.Item label="Risk"><Tag color={RISK_MAP[detailSkill.risk]?.color}>{RISK_MAP[detailSkill.risk]?.text}</Tag></Descriptions.Item>
+                  <Descriptions.Item label="Category"><Tag color={CATEGORIES[detailSkill.category]?.color}>{CATEGORIES[detailSkill.category]?.label}</Tag></Descriptions.Item>
+                  <Descriptions.Item label="Author">{detailSkill.author}</Descriptions.Item>
+                  <Descriptions.Item label="Description" span={2}>{detailSkill.description}</Descriptions.Item>
+                  <Descriptions.Item label="License">{detailSkill.license}</Descriptions.Item>
+                  <Descriptions.Item label="Usage">{detailSkill.usageCount?.toLocaleString()} invocations</Descriptions.Item>
                 </Descriptions>
-                <Card title="工具权限" size="small" style={{ marginTop: 16 }}>
+                <Card title="Tool Permissions" size="small" style={{ marginTop: 16 }}>
                   <Space wrap>{detailSkill.tools?.map((t: string) => <Tag key={t} color="volcano">{t}</Tag>)}</Space>
                 </Card>
-                <Card title="关联 Agent" size="small" style={{ marginTop: 16 }}>
-                  <Space wrap>{detailSkill.agents?.map((a: string) => <Tag key={a} color="geekblue">{a}</Tag>)}</Space>
-                  {detailSkill.agents?.length === 0 && <Empty description="未关联任何 Agent" />}
+                <Card title="Bound Agents" size="small" style={{ marginTop: 16 }}>
+                  {detailSkill.agents?.length > 0 ? (
+                    <Space wrap>{detailSkill.agents.map((a: string) => <Tag key={a} color="geekblue">{a}</Tag>)}</Space>
+                  ) : <Text type="secondary">Not bound to any agent</Text>}
                 </Card>
               </>
-            )},
-            { key: "readme", label: "文档", children: (
-              <div style={{ background: "#f6f8fa", borderRadius: 8, padding: 16 }}>
-                <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit" }}>{detailSkill.readme}</pre>
-              </div>
             )},
           ]} />
         )}
       </Drawer>
 
-      {/* Install from ClawHub */}
-      <Modal title="🏪 从 ClawHub 安装技能" open={installOpen} onCancel={() => setInstallOpen(false)} footer={null} width={700}>
-        <Alert message="从 clawhub.com 浏览和安装社区技能" type="info" style={{ marginBottom: 16 }} />
+      {/* ClawHub Install Modal */}
+      <Modal title="🏪 Install from ClawHub" open={installOpen} onCancel={() => setInstallOpen(false)} footer={null} width={700}>
+        <Alert message="Browse and install community skills from clawhub.com" type="info" style={{ marginBottom: 16 }} />
         <List dataSource={CLAWHUB_SKILLS} renderItem={item => (
           <List.Item actions={[
             <Button type="primary" size="small" icon={<CloudDownloadOutlined />}
-              onClick={() => installMut.mutate({ name: item.id, version: item.version })}>安装</Button>
+              onClick={() => installMut.mutate({ name: item.id, version: item.version })}>Install</Button>
           ]}>
             <List.Item.Meta
               avatar={<AppstoreOutlined style={{ fontSize: 24, color: "#4945ff" }} />}
               title={<Space>{item.name} <Tag>v{item.version}</Tag> <Tag color={RISK_MAP[item.risk]?.color}>{RISK_MAP[item.risk]?.text}</Tag></Space>}
-              description={<>{item.description}<br /><Text type="secondary">👤 {item.author} · ⬇️ {item.downloads.toLocaleString()} 次下载</Text></>}
+              description={<>{item.description}<br /><Text type="secondary">👤 {item.author} · ⬇️ {item.downloads.toLocaleString()} downloads</Text></>}
             />
           </List.Item>
         )} />

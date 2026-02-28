@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Card, Descriptions, Tag, Typography, Button, Space, List, Form, Input, message, Tabs, Divider, Alert } from "antd";
-import { LockOutlined, UserOutlined, SafetyCertificateOutlined, LogoutOutlined, BankOutlined } from "@ant-design/icons";
+import { LockOutlined, EyeTwoTone, EyeInvisibleOutlined, UserOutlined, SafetyCertificateOutlined, LogoutOutlined, BankOutlined } from "@ant-design/icons";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/stores/auth";
 import api from "@/lib/api";
@@ -34,16 +34,16 @@ export default function ProfilePage() {
             <Title level={5}>修改密码</Title>
             <Form form={pwForm} layout="vertical" onFinish={v => changePwMut.mutate(v)}>
               <Form.Item name="currentPassword" label="当前密码" rules={[{ required: true, message: "请输入当前密码" }]}>
-                <Input.Password placeholder="当前密码" />
+                <Input.Password placeholder="当前密码" iconRender={(visible) => visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />} />
               </Form.Item>
               <Form.Item name="newPassword" label="新密码" rules={[{ required: true, min: 6, message: "至少 6 位" }]}>
-                <Input.Password placeholder="新密码（至少 6 位）" />
+                <Input.Password placeholder="新密码（至少 6 位）" iconRender={(visible) => visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />} />
               </Form.Item>
               <Form.Item name="confirmPassword" label="确认新密码" dependencies={["newPassword"]}
                 rules={[{ required: true }, ({ getFieldValue }) => ({
                   validator(_, value) { return !value || getFieldValue("newPassword") === value ? Promise.resolve() : Promise.reject("密码不一致"); }
                 })]}>
-                <Input.Password placeholder="再次输入新密码" />
+                <Input.Password placeholder="再次输入新密码" iconRender={(visible) => visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />} />
               </Form.Item>
               <Button type="primary" htmlType="submit" loading={changePwMut.isPending} icon={<LockOutlined />}>修改密码</Button>
             </Form>
