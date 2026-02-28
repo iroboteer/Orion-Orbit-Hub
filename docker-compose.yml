@@ -17,13 +17,27 @@ services:
       timeout: 3s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6399:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   bff:
     build: ./bff
     network_mode: host
     environment:
       PORT: "4100"
       DATABASE_URL: "postgres://control:control@127.0.0.1:5433/control_ui"
-      COOKIE_SECRET: "$(openssl rand -hex 32)"
+      REDIS_URL: "redis://127.0.0.1:6399"
+      COOKIE_SECRET: "a9f3e7b2c1d8f4a6e3b9c5d2f7a1e8b4c6d9f3a2e5b8c1d4f7a0e3b6c9d2f5"
       OPENCLAW_GATEWAY_URL: "http://127.0.0.1:18789"
       NODE_ENV: production
       HOME: "/home/ec2-user"
@@ -31,6 +45,8 @@ services:
       - /home/ec2-user/.openclaw/openclaw.json:/home/ec2-user/.openclaw/openclaw.json:ro
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   frontend:
@@ -44,3 +60,4 @@ volumes:
   db-data:
     name: openclaw-control-ui_control-db-data
     external: true
+  redis-data:

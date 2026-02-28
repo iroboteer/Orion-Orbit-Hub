@@ -282,3 +282,50 @@ export const exportTasks = pgTable("export_tasks", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   completedAt: timestamp("completed_at"),
 });
+
+// ============ CHAT SESSIONS & MESSAGES ============
+export const chatSessions = pgTable("chat_sessions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  key: varchar("key", { length: 128 }).notNull(),
+  title: varchar("title", { length: 256 }).notNull().default("New Chat"),
+  agent: varchar("agent", { length: 64 }).notNull().default("agent-main"),
+  model: varchar("model", { length: 64 }).notNull().default("claude-opus-4"),
+  status: varchar("status", { length: 32 }).notNull().default("active"), // active, archived, completed, failed
+  taskStatus: varchar("task_status", { length: 32 }), // null, pending, running, success, failed, cancelled
+  taskDescription: text("task_description"),
+  taskProgress: integer("task_progress"), // 0-100
+  pinned: boolean("pinned").default(false),
+  messageCount: integer("message_count").notNull().default(0),
+  totalTokens: integer("total_tokens").notNull().default(0),
+  lastMessage: text("last_message"),
+  lastMessageAt: timestamp("last_message_at"),
+  metadata: jsonb("metadata"), // extra context: tags, labels, etc.
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("chat_sessions_user_idx").on(table.userId),
+  tenantIdx: index("chat_sessions_tenant_idx").on(table.tenantId),
+  keyIdx: index("chat_sessions_key_idx").on(table.key),
+  statusIdx: index("chat_sessions_status_idx").on(table.status),
+}));
+
+export const chatMessages = pgTable("chat_messages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  sessionId: uuid("session_id").notNull().references(() => chatSessions.id, { onDelete: "cascade" }),
+  role: varchar("role", { length: 16 }).notNull(), // user, assistant, system, tool
+  content: text("content").notNull(),
+  model: varchar("model", { length: 64 }),
+  tokensInput: integer("tokens_input"),
+  tokensOutput: integer("tokens_output"),
+  toolCalls: jsonb("tool_calls"), // [{name, args, result}]
+  thinking: text("thinking"),
+  starred: boolean("starred").default(false),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  sessionIdx: index("chat_messages_session_idx").on(table.sessionId),
+  roleIdx: index("chat_messages_role_idx").on(table.role),
+  createdIdx: index("chat_messages_created_idx").on(table.createdAt),
+}));

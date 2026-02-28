@@ -117,7 +117,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // Change password
-  app.post("/change-password", async (request, reply) => {
+  app.post("/change-password", { preHandler: authenticate }, async (request, reply) => {
     if (!request.user) return reply.code(401).send({ error: "Unauthorized" });
     const { currentPassword, newPassword } = request.body as any;
     if (!currentPassword || !newPassword) return reply.code(400).send({ error: "Missing fields" });
