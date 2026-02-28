@@ -124,4 +124,41 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
     await logAudit(request, "user.force_logout", `user:${id}`, { resourceType: "user" });
     return { success: true };
   });
+
+  // Update user info
+  app.put("/:id", { preHandler: requirePermission("user.tenant.invite") }, async (request) => {
+    const { id } = request.params as { id: string };
+    const { displayName, email, status } = request.body as any;
+    const updates: any = { updatedAt: new Date() };
+    if (displayName !== undefined) updates.displayName = displayName;
+    if (email !== undefined) updates.email = email;
+    if (status !== undefined) updates.status = status;
+    const [updated] = await app.db.update(users).set(updates).where(eq(users.id, id)).returning();
+    await logAudit(request, "user.update", `user:${id}`, { resourceType: "user", after: updates });
+    const { passwordHash, ...safe } = updated;
+    return { user: safe };
+  });
+
+  // Delete user from tenant
+  app.delete("/:id", { preHandler: requirePermission("user.tenant.remove") }, async (request) => {
+    const { id } = request.params as { id: string };
+    const { tenantId } = request.user!;
+    // Remove from tenant
+    await app.db.delete(tenantMembers).where(and(eq(tenantMembers.userId, id), eq(tenantMembers.tenantId, tenantId!)));
+    // Remove roles in this tenant
+    await app.db.delete(userRoles).where(and(eq(userRoles.userId, id), eq(userRoles.tenantId, tenantId!)));
+    await logAudit(request, "user.remove", `user:${id}`, { resourceType: "user" });
+    return { success: true };
+  });
+
+  // Reset password (admin)
+  app.post("/:id/reset-password", { preHandler: requirePermission("user.tenant.invite") }, async (request) => {
+    const { id } = request.params as { id: string };
+    const { newPassword } = request.body as any;
+    if (!newPassword || newPassword.length < 6) return { error: "Password too short" };
+    const hash = await bcrypt.hash(newPassword, 10);
+    await app.db.update(users).set({ passwordHash: hash, updatedAt: new Date() }).where(eq(users.id, id));
+    await logAudit(request, "user.reset_password", `user:${id}`, { resourceType: "user" });
+    return { success: true };
+  });
 };
