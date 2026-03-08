@@ -1,0 +1,37 @@
+name: Open Source Hygiene
+
+on:
+  push:
+    branches: [ main, develop, production ]
+  pull_request:
+    branches: [ main, develop, production ]
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Block Private Artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Reject tracked files that should never be published in this open-source repo.
+          forbidden_regex='(^|/)(docs/memory/|docs/project-stargate-memory/|private/)|(^|/)infra-credentials\.local\.md$|(^|/)\.env$|(\.pem|\.key|\.p12)$'
+
+          found=0
+          while IFS= read -r file; do
+            if [[ "$file" =~ $forbidden_regex ]]; then
+              echo "forbidden file tracked: $file"
+              found=1
+            fi
+          done < <(git ls-files)
+
+          if [[ "$found" -ne 0 ]]; then
+            echo "Open source hygiene check failed."
+            exit 1
+          fi
+
+          echo "Open source hygiene check passed."

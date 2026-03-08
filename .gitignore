@@ -5,3 +5,12 @@ dist/
 .DS_Store
 bff/node_modules/
 frontend/node_modules/
+
+# Open-source hygiene (do not publish private operational artifacts)
+docs/memory/
+docs/project-stargate-memory/
+private/
+*.pem
+*.key
+*.p12
+infra-credentials.local.md
