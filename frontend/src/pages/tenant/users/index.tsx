@@ -4,7 +4,7 @@ import { Card, Table, Button, Tag, Space, Modal, Form, Input, Select, message, P
 import { PlusOutlined, UserOutlined, LockOutlined, EditOutlined, DeleteOutlined,
   EyeOutlined, StopOutlined, CheckCircleOutlined, SafetyCertificateOutlined,
   LogoutOutlined, KeyOutlined, MailOutlined, TeamOutlined,
-  EyeTwoTone, EyeInvisibleOutlined } from "@ant-design/icons";
+  EyeTwoTone, EyeInvisibleOutlined, SearchOutlined, FilterOutlined } from "@ant-design/icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 const { Title, Text } = Typography;
@@ -21,6 +21,9 @@ export default function UsersPage() {
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
   const [resetPwForm] = Form.useForm();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [authFilter, setAuthFilter] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({ queryKey: ["users"], queryFn: () => api.get("/users").then(r => r.data) });
   const { data: rolesData } = useQuery({ queryKey: ["roles"], queryFn: () => api.get("/roles").then(r => r.data) });
@@ -79,8 +82,14 @@ export default function UsersPage() {
     setEditOpen(true);
   };
 
-  const users_list = data?.users || [];
-  const activeCount = users_list.filter((u: any) => u.status === "active").length;
+  const allUsers = data?.users || [];
+  const users_list = allUsers.filter((u: any) => {
+    if (search && !u.email?.toLowerCase().includes(search.toLowerCase()) && !u.displayName?.toLowerCase().includes(search.toLowerCase())) return false;
+    if (statusFilter && u.status !== statusFilter) return false;
+    if (authFilter && (u.idpProvider || "local") !== authFilter) return false;
+    return true;
+  });
+  const activeCount = allUsers.filter((u: any) => u.status === "active").length;
 
   const columns = [
     {
@@ -151,7 +160,21 @@ export default function UsersPage() {
       </Row>
 
       <Card title={<Space><TeamOutlined /> <Title level={4} style={{ margin: 0 }}>User Management</Title></Space>}
-        extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => setInviteOpen(true)}>Invite User</Button>}>
+        extra={
+          <Space>
+            <Input placeholder="Search name or email..." prefix={<SearchOutlined />} allowClear size="small" style={{ width: 200 }}
+              value={search} onChange={e => setSearch(e.target.value)} />
+            <Select placeholder="Status" size="small" style={{ width: 120 }} allowClear value={statusFilter}
+              onChange={v => setStatusFilter(v)} options={[
+                { value: "active", label: "✅ Active" }, { value: "suspended", label: "⏸️ Suspended" }, { value: "disabled", label: "🚫 Disabled" },
+              ]} />
+            <Select placeholder="Auth" size="small" style={{ width: 110 }} allowClear value={authFilter}
+              onChange={v => setAuthFilter(v)} options={[
+                { value: "local", label: "🔒 Local" }, { value: "oidc", label: "🌐 OIDC" },
+              ]} />
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setInviteOpen(true)}>Invite User</Button>
+          </Space>
+        }>
         <Table dataSource={users_list} columns={columns} rowKey="id" loading={isLoading} scroll={{ x: 1100 }}
           pagination={{ total: data?.total, pageSize: 20, showTotal: t => `${t} users` }} />
       </Card>
